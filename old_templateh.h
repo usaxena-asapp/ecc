@@ -1,21 +1,8 @@
 #pragma once
 
 #include <unordered_map>
-#include <iostream>      // Add this
-#include <fstream>       // Add this  
-#include <algorithm>     // Add this (for std::sort, std::max, std::min)
-#include <vector>        // Add this
-#include <limits>        // Add this
-#include <thread>        // Add this
-#include <cmath>         // Add this
 #include "helper_cuda.h"
 #include "utility.h"
-#include "ctpl_stl.h"
-
-template<typename input_elem_t>
-void init_histogram_1D_(input_elem_t* data1D, const int size) {
-	for (size_t i = 0; i < size; i++) data1D[i] = (input_elem_t)0;
-}
 
 template<typename input_elem_t>
 void init_histogram_2D_(input_elem_t** data2D, const int num, const int size) {
@@ -23,10 +10,8 @@ void init_histogram_2D_(input_elem_t** data2D, const int num, const int size) {
 }
 
 template<typename input_elem_t>
-input_elem_t* allocate_device_memory1D_(const int size) {
-	input_elem_t* data1D;
-	checkCudaErrors(cudaMalloc((void**)&data1D, size * sizeof(input_elem_t)));
-	return data1D;
+void init_histogram_1D_(input_elem_t* data1D, const int size) {
+	for (size_t i = 0; i < size; i++) data1D[i] = (input_elem_t)0;
 }
 
 template<typename input_elem_t>
@@ -37,8 +22,9 @@ input_elem_t** allocate_device_memory2D_(const int num, const int size) {
 }
 
 template<typename input_elem_t>
-input_elem_t* allocate_host_memory1D_(const int size) {
-	input_elem_t* data1D = (input_elem_t*)malloc(size * sizeof(input_elem_t));
+input_elem_t* allocate_device_memory1D_(const int size) {
+	input_elem_t* data1D;
+	checkCudaErrors(cudaMalloc((void**)&data1D, size * sizeof(input_elem_t)));
 	return data1D;
 }
 
@@ -50,9 +36,8 @@ input_elem_t** allocate_host_memory2D_(const int num, const int size) {
 }
 
 template<typename input_elem_t>
-input_elem_t* allocate_host_memory1D_pinned_(const int size) {
-	input_elem_t* data1D;
-	checkCudaErrors(cudaMallocHost((void**)&data1D, size * sizeof(input_elem_t)));
+input_elem_t* allocate_host_memory1D_(const int size) {
+	input_elem_t* data1D = (input_elem_t*)malloc(size * sizeof(input_elem_t));
 	return data1D;
 }
 
@@ -61,6 +46,13 @@ input_elem_t** allocate_host_memory2D_pinned_(const int num, const int size) {
 	input_elem_t** data2D = new input_elem_t * [num];
 	for (int i = 0; i < num; i++) data2D[i] = allocate_host_memory1D_pinned_<input_elem_t>(size);
 	return data2D;
+}
+
+template<typename input_elem_t>
+input_elem_t* allocate_host_memory1D_pinned_(const int size) {
+	input_elem_t* data1D;
+	checkCudaErrors(cudaMallocHost((void**)&data1D, size * sizeof(input_elem_t)));
+	return data1D;
 }
 
 template<typename input_elem_t>
@@ -152,8 +144,8 @@ float* from_stream_2Dfloat_(std::string filename, int& h, int& w, bool expand_by
 					data[j] = static_cast<float>(v);
 					if (!duplicate_rec[data[j]]) { duplicate_rec[data[j]] = true; ascend_unique_arr.push_back(data[j]); }
 					if (!duplicate_rec_local[data[j]]) { duplicate_rec_local[data[j]] = true; ascend_unique_arr_local[secidx].push_back(data[j]); }
-					max_ = std::max(max_, data[j]);
-					min_ = std::min(min_, data[j]);
+					max_ = max(max_, data[j]);
+					min_ = min(min_, data[j]);
 				}
 			std::sort(ascend_unique_arr_local[secidx].begin(), ascend_unique_arr_local[secidx].end());
 			binNum_max_local = (ascend_unique_arr_local[secidx].size() > binNum_max_local) ? ascend_unique_arr_local[secidx].size() : binNum_max_local;
@@ -185,8 +177,8 @@ float* from_stream_2Dfloat_(std::string filename, int& h, int& w, bool expand_by
 					data[i * w + j] = v_;
 					if (!duplicate_rec[v_]) { duplicate_rec[v_] = true; ascend_unique_arr.push_back(v_); }
 					if (!duplicate_rec_local[v_]) { duplicate_rec_local[v_] = true; ascend_unique_arr_local[secidx].push_back(v_); }
-					max_ = std::max(max_, v_);
-					min_ = std::min(min_, v_);
+					max_ = max(max_, v_);
+					min_ = min(min_, v_);
 				}
 				stream.read(reinterpret_cast<char*>(&v), sizeof(input_value_t));
 				data[(i + 1) * w - 1] = static_cast<float>(v);
@@ -294,8 +286,8 @@ float* from_stream_3Dfloat_(
 							data[i * h * w + k * w + j] = v_;
 							if (!duplicate_rec[v_]) { duplicate_rec[v_] = true; ascend_unique_arr.push_back(v_); }
 							if (!duplicate_rec_local[v_]) { duplicate_rec_local[v_] = true; ascend_unique_arr_local[secidx].push_back(v_); }
-							max_ = std::max(max_, v_);
-							min_ = std::min(min_, v_);
+							max_ = max(max_, v_);
+							min_ = min(min_, v_);
 						}
 					}
 				j = 0;

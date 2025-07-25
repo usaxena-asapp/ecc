@@ -175,7 +175,7 @@ std::vector<double> ECC_(
 	section.clear();
 	ascend_unique_arr.clear();
 	free_vector2D_<float>(ascend_unique_arr_local_rec);
-	(async_mode) ? cudaFreeHost(input_host) : free(input_host);
+	if (async_mode) cudaFreeHost(input_host); else free(input_host);
 	(async_mode) ? free_host_memory2D_pinned_<float>(input_host, engine_num) : free_host_memory2D_<float>(input_host, engine_num);
 	free(VCEC_host_);
 	(async_mode) ? free_host_memory2D_pinned_<int>(VCEC_host_partial_, engine_num) : free_host_memory2D_<int>(VCEC_host_partial_, engine_num);
@@ -343,7 +343,7 @@ std::vector<double> ECC_folder_sequential(
 	section.clear();
 	
 	free_vector2D_<float>(ascend_unique_arr_local_rec);
-	(async_mode) ? cudaFreeHost(input_host) : free(input_host);
+	if (async_mode) cudaFreeHost(input_host); else free(input_host);
 	(async_mode) ? free_host_memory2D_pinned_<float>(input_host, engine_num) : free_host_memory2D_<float>(input_host, engine_num);
 	
 	(async_mode) ? free_host_memory2D_pinned_<int>(VCEC_host_partial_, engine_num) : free_host_memory2D_<int>(VCEC_host_partial_, engine_num);
@@ -498,7 +498,7 @@ std::vector<double> ECC_folder_multiple(
 	// ------- Free memory --------
 	section.clear();
 	free_vector2D_<float>(ascend_unique_arr_local_rec);
-	(async_mode) ? cudaFreeHost(input_host) : free(input_host);
+	if (async_mode) cudaFreeHost(input_host); else free(input_host);
 	(async_mode) ? free_host_memory2D_pinned_<float>(input_host, engine_num) : free_host_memory2D_<float>(input_host, engine_num);
 	(async_mode) ? free_host_memory2D_pinned_<int>(VCEC_host_partial_, engine_num) : free_host_memory2D_<int>(VCEC_host_partial_, engine_num);
 	(async_mode) ? free_host_memory2D_pinned_<float>(ascend_unique_arr_local_host_, engine_num) : free_host_memory2D_<float>(ascend_unique_arr_local_host_, engine_num);
@@ -671,10 +671,11 @@ void run_folder(std::string& path, int run_times) {
 		std::vector<float> total_time, execution_time, load_time;
 		for (int j = 0; j < run_times; j++) {
 			std::vector<double> time;
+			std::string empty_str = "";
 			if (dim == std::string("2"))
-				time = ECC_(res[i], std::string(""), imageH_, imageW_, -1, pad_by_one, async_mode, mt_read, manual_timing, verbose, false);
+				time = ECC_(res[i], empty_str, imageH_, imageW_, -1, pad_by_one, async_mode, mt_read, manual_timing, verbose, false);
 			else
-				time = ECC_(res[i], std::string(""), imageH_, imageW_, imageD_, pad_by_one, async_mode, mt_read, manual_timing, verbose ,false);
+				time = ECC_(res[i], empty_str, imageH_, imageW_, imageD_, pad_by_one, async_mode, mt_read, manual_timing, verbose ,false);
 			total_time.push_back(time[1]);
 			execution_time.push_back(time[1] - time[0]);
 			load_time.push_back(time[0]);
@@ -766,8 +767,9 @@ void run_GENERAL(std::string& path, int data_dim, int run_times) {
 		std::vector<float> total_time, execution_time, load_time;
 		for (int j = 0; j < run_times; j++) {
 			std::vector<double> time;
-			time = (data_dim == 2) ? ECC_(res[i], std::string(""), imageH_, imageW_, -1, pad_by_one, async_mode, mt_read, manual_timing, verbose, false) :
-				ECC_(res[i], std::string(""), imageH_, imageW_, imageD_, pad_by_one, async_mode, mt_read, manual_timing, verbose, false);
+			std::string empty_str = "";
+			time = (data_dim == 2) ? ECC_(res[i], empty_str, imageH_, imageW_, -1, pad_by_one, async_mode, mt_read, manual_timing, verbose, false) :
+				ECC_(res[i], empty_str, imageH_, imageW_, imageD_, pad_by_one, async_mode, mt_read, manual_timing, verbose, false);
 			total_time.push_back(time[0] + time[1]);
 			execution_time.push_back(time[1]);
 			load_time.push_back(time[0]);

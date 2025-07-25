@@ -6,7 +6,6 @@
 #include <numeric>
 #include <functional>
 #include <limits>
-#include <cmath>
 
 #include "utility.h"
 #include "kernel.h"
@@ -17,10 +16,7 @@
 #include <boost/range/iterator_range.hpp>
 
 #define NOMINMAX
-// #include <Windows.h>  // Commented out for Linux
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <ctime>
+#include <Windows.h>
 
 int find_and_query_device(int argc, char** argv, bool verbose) {
 	int dev = findCudaDevice(argc, (const char**)argv);
@@ -60,8 +56,8 @@ void print_ECC_results(std::vector<float>& ascend_unique_arr, int* VCEC_host) {
 }
 
 float* generate_toy_sample(const int dim, const int index) {
-	static float dum_array_2D[3][9] = { { 1,2,5,6,3,4,8,7,0 }, { 3,3,3,3,3,3,3,3,3 }, { 3,3,3,3,4,3,3,3,3 } };
-	static float dum_array_3D[2][27] = { { 1,2,5,6,3,4,8,7,0,3,3,3,3,3,3,3,3,3,3,3,3,3,4,3,3,3,3 }, {1.1,2.1,5.1,6.1,3.1,4.1,8.1,7.1,0.1,
+	float dum_array_2D[3][9] = { { 1,2,5,6,3,4,8,7,0 }, { 3,3,3,3,3,3,3,3,3 }, { 3,3,3,3,4,3,3,3,3 } };
+	float dum_array_3D[2][27] = { { 1,2,5,6,3,4,8,7,0,3,3,3,3,3,3,3,3,3,3,3,3,3,4,3,3,3,3 }, {1.1,2.1,5.1,6.1,3.1,4.1,8.1,7.1,0.1,
 		3.1,3.1,3.1,3.1,3.1,3.1,3.1,3.1,3.1,3.1,3.1,3.1,3.1,4.1,3.1,3.1,3.1,3.1} };
 	if (dim == 2) { assert(index < 3); return dum_array_2D[index]; }
 	else if (dim == 3) { assert(index < 2); return dum_array_3D[index]; }
@@ -181,19 +177,31 @@ std::vector<float> accumulate_ascend_unique_arr(std::vector<std::vector<float>>&
 }
 
 double get_wall_time() {
-	struct timespec ts;
-	if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
+	LARGE_INTEGER time, freq;
+	if (!QueryPerformanceFrequency(&freq)) {
+		//  Handle error
 		return 0;
 	}
-	return (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
+	if (!QueryPerformanceCounter(&time)) {
+		//  Handle error
+		return 0;
+	}
+	return (double)time.QuadPart / freq.QuadPart;
 }
 
 double get_cpu_time() {
-	struct rusage usage;
-	if (getrusage(RUSAGE_SELF, &usage) != 0) {
+	FILETIME a, b, c, d;
+	if (GetProcessTimes(GetCurrentProcess(), &a, &b, &c, &d) != 0) {
+		//  Returns total user time.
+		//  Can be tweaked to include kernel times as well.
+		return
+			(double)(d.dwLowDateTime |
+				((unsigned long long)d.dwHighDateTime << 32)) * 0.0000001;
+	}
+	else {
+		//  Handle error
 		return 0;
 	}
-	return (double)usage.ru_utime.tv_sec + (double)usage.ru_utime.tv_usec / 1000000.0;
 }
 
 std::vector<std::string> fileNames_from_folder(std::string& path) {
