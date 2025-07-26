@@ -516,9 +516,10 @@ __global__ void convolutionColumnsKernel(
 
     //Offset to the upper halo edge
     const int baseX = blockIdx.x * COLUMNS_BLOCKDIM_X + threadIdx.x;
-    if (baseX >= imageW) goto out_of_bound;
+    
     const int baseY = (blockIdx.y * COLUMNS_RESULT_STEPS - COLUMNS_HALO_STEPS) * COLUMNS_BLOCKDIM_Y + threadIdx.y;
     const int upper_initial = baseY * pitch + baseX;
+    if (baseX >= imageW) goto out_of_bound;
     d_Src += upper_initial;
     d_Dst += upper_initial;
 
