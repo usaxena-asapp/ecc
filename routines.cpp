@@ -58,6 +58,18 @@ std::vector<double> ECC_(
 	int engine_num = 3;
 	engine_num = (engine_num > chunk_num) ? chunk_num : engine_num;
 
+	// Replace your complex I/O with this simple version:
+	auto start = std::chrono::high_resolution_clock::now();
+
+	std::ifstream file(fileName, std::ios::binary);
+	std::vector<float> data(512*512*512);
+	file.read(reinterpret_cast<char*>(data.data()), data.size() * sizeof(float));
+	file.close();
+
+	auto end = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+	std::cout << "Simple read time: " << duration.count() << " ms" << std::endl;
+
 	// ------ Divide into chunks
 	std::vector<std::pair<int, int>> section = (data_3D) ? return_chunk_index(imageD_, chunk_num, pad_by_one) : return_chunk_index(imageH_, chunk_num, pad_by_one);
 
@@ -337,6 +349,7 @@ std::vector<double> ECC_folder_sequential(
 		printf("Number of unique values: %d\n", binNum_global);
 		printf("Data read time: %f msecs;\n", timings[0]);
 		printf("GPU total time: %f msecs;\n", timings[1]);
+		printf("GPU only time: %f msecs;\n", timings[1] - timings[0]);
 	}
 
 	// ------- Free memory --------
