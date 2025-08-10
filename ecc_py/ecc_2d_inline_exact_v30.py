@@ -16,19 +16,15 @@ cuda_source = '''
 #define iDivUp(a, b) ((a + b - 1) / b)
 
 // Binary search function for finding threshold bin
-__device__ inline int binary_search(float* arr, int size, float value) {
-    int left = 0;
-    int right = size - 1;
-
-    while (left < right) {
-        int mid = (left + right) / 2;
-        if (arr[mid] < value) {
-            left = mid + 1;
-        } else {
-            right = mid;
-        }
+__device__ inline int binary_search(const float* arr, int size, float value) {
+    int l = 0, r = size - 1;
+    while (l <= r) {
+        int m = (l + r) >> 1;
+        float a = arr[m];
+        if (fabs(a - value) < 1e-6f) return m;          
+        if (a <  value) l = m + 1; else r = m - 1;
     }
-    return left;
+    return (l < size) ? l : size - 1;      // safeguard (shouldn’t trigger)
 }
 
 __global__ void ECC_kernel_v30(
@@ -246,13 +242,6 @@ if __name__ == '__main__':
     print(f"\n🔍 Extracting unique values from data...")
     unique_values = get_unique_values_sorted(data)
     binNum = len(unique_values)
-
-    # Limit bins if necessary
-    if binNum > args.max_bins:
-        print(f"⚠️  Too many unique values ({binNum}), sampling {args.max_bins} evenly spaced values")
-        indices = torch.linspace(0, binNum - 1, args.max_bins, dtype=torch.long)
-        unique_values = unique_values[indices]
-        binNum = args.max_bins
 
     print(f"📊 Number of unique values (bins): {binNum}")
     print(f"📊 Value range: [{unique_values[0].item():.3f}, {unique_values[-1].item():.3f}]")
